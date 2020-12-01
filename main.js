@@ -95,11 +95,12 @@ var app = http.createServer(function(request,response){
         var post = qs.parse(body); //지금껏 저장한 body를 입력값으로. -> dic형태로 됨.
         var title = post.title;
         var description = post.description;
-        console.log(post.title);
+        fs.writeFile(`data/${title}`, description, 'utf8', function(err){
+          response.writeHead(302, //302 : 리다이렉션
+            {Location: `/?id=${title}`});
+          response.end("success");
+        })
       });
-
-      response.writeHead(200); //200 : 성공적으로 파일 전송
-      response.end("success");
     }else {
       response.writeHead(404); // 404 : Not Found
       response.end('Not Found');
