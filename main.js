@@ -1,6 +1,7 @@
 var http = require('http');
 var fs = require('fs');
 var url = require('url');
+var qs = require("querystring");
 
 function templateHTML(title, list, body){
   return `
@@ -13,6 +14,7 @@ function templateHTML(title, list, body){
   <body>
     <h1><a href="/">WEB</a></h1>
     ${list}
+    <a href="/create">create</a>
     ${body}
   </body>
   </html>
@@ -58,7 +60,47 @@ var app = http.createServer(function(request,response){
           });
         });
       }
-    } else {
+    } else if(pathname === '/create'){
+      fs.readdir('./data', function(error, filelist){
+        var title = 'WEB - create';
+        var list = templateList(filelist);
+        var template = templateHTML(title, list, `
+        <form action="http://localhost:3000/create_process" method="post"> 
+          <p><input type="text" name="title" placeholder="title"></p>
+          <p>
+            <textarea name="description" placeholder="description"></textarea>
+          </p>
+          <p>
+            <input type="submit">
+          </p>
+        </form>
+        `);
+        response.writeHead(200); //200 : 성공적으로 파일 전송
+        response.end(template);
+      })
+    } else if(pathname === "/create_process") {
+      var body = "";
+      request.on('data', function(data){ 
+        //post로 전송된 데이터가 많을 경우를 대비. 
+        //조각조각의 데이터를 서버에서 수신할때마다 콜백함수 호출. data 인자를 통해 줌.
+        body += data;
+
+        //데이터가 너무 많으면 접속 끊기
+        if (body.length > 1e6){
+          request.connection.destroy();
+        }
+      });
+      request.on('end', function(){
+        //더 이상 들어올 데이터가 없을 때 콜백함수 호출
+        var post = qs.parse(body); //지금껏 저장한 body를 입력값으로. -> dic형태로 됨.
+        var title = post.title;
+        var description = post.description;
+        console.log(post.title);
+      });
+
+      response.writeHead(200); //200 : 성공적으로 파일 전송
+      response.end("success");
+    }else {
       response.writeHead(404); // 404 : Not Found
       response.end('Not Found');
     }
